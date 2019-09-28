@@ -5,17 +5,38 @@
 *
 *   Implementation By Bryce Neal (@prettymuchbryce)
 **/
+import Instance from './instance';
+export interface IPoint {
+    x: number;
+    y: number;
+}
 export declare class EasyStar {
     STRAIGHT_COST: number;
     DIAGONAL_COST: number;
-    pointsToAvoid: any;
+    pointsToAvoid: {
+        [key: number]: {
+            [key: number]: number;
+        };
+    };
     collisionGrid: number[][];
-    costMap: any;
-    pointsToCost: any;
-    directionalConditions: any;
+    costMap: {
+        [key: number]: number;
+    };
+    pointsToCost: {
+        [key: number]: {
+            [key: number]: number;
+        };
+    };
+    directionalConditions: {
+        [key: number]: {
+            [key: number]: Directions[];
+        };
+    };
     allowCornerCutting: boolean;
-    iterationsSoFar: any;
-    instances: any;
+    iterationsSoFar: number;
+    instances: {
+        [key: number]: Instance;
+    };
     instanceQueue: number[];
     iterationsPerCalculation: number;
     acceptableTiles: number[];
@@ -28,7 +49,7 @@ export declare class EasyStar {
     * which tiles in your grid should be considered
     * acceptable, or "walkable".
     **/
-    setAcceptableTiles(tiles: any): void;
+    setAcceptableTiles(tiles: number[] | number | string): void;
     /**
      * Enable diagonal pathfinding.
      */
@@ -43,14 +64,14 @@ export declare class EasyStar {
     * @param {Array} grid The collision grid that this EasyStar instance will read from.
     * This should be a 2D Array of Numbers.
     **/
-    setGrid(grid: any): void;
+    setGrid(grid: number[][]): void;
     /**
     * Sets the tile cost for a particular tile type.
     *
     * @param {Number} The tile type to set the cost for.
     * @param {Number} The multiplicative cost associated with the given tile.
     **/
-    setTileCost(tileType: any, cost: any): void;
+    setTileCost(tileType: number, cost: number): void;
     /**
     * Sets the an additional cost for a particular point.
     * Overrides the cost from setTileCost.
@@ -79,7 +100,7 @@ export declare class EasyStar {
     * @param {Array.<String>} allowedDirections A list of all the allowed directions that can access
     * the tile.
     **/
-    setDirectionalCondition(x: number, y: number, allowedDirections: any): void;
+    setDirectionalCondition(x: number, y: number, allowedDirections: Directions[]): void;
     /**
     * Remove all directional conditions
     **/
@@ -130,7 +151,7 @@ export declare class EasyStar {
     * @return {Array} The path
     *
     **/
-    findPathSync(startX: number, startY: number, endX: number, endY: any): undefined;
+    findPathSync(startX: number, startY: number, endX: number, endY: number): IPoint[] | null;
     /**
     * Find a path.
     *
@@ -143,10 +164,7 @@ export declare class EasyStar {
     * @return {Number} A numeric, non-zero value which identifies the created instance. This value can be passed to cancelPath to cancel the path calculation.
     *
     **/
-    findPath(startX: number, startY: number, endX: number, endY: number, callback: {
-        (arg0: never[]): void;
-        (arg0: null): void;
-    }): number | undefined;
+    findPath(startX: number, startY: number, endX: number, endY: number, callback: (data: IPoint[] | null) => void): number | undefined;
     /**
      * Cancel a path calculation.
      *
@@ -174,11 +192,13 @@ export declare class EasyStar {
     private coordinateToNode;
     private getDistance;
 }
-export declare const TOP = "TOP";
-export declare const TOP_RIGHT = "TOP_RIGHT";
-export declare const RIGHT = "RIGHT";
-export declare const BOTTOM_RIGHT = "BOTTOM_RIGHT";
-export declare const BOTTOM = "BOTTOM";
-export declare const BOTTOM_LEFT = "BOTTOM_LEFT";
-export declare const LEFT = "LEFT";
-export declare const TOP_LEFT = "TOP_LEFT";
+export declare enum Directions {
+    TOP = "TOP",
+    TOP_RIGHT = "TOP_RIGHT",
+    RIGHT = "RIGHT",
+    BOTTOM_RIGHT = "BOTTOM_RIGHT",
+    BOTTOM = "BOTTOM",
+    BOTTOM_LEFT = "BOTTOM_LEFT",
+    LEFT = "LEFT",
+    TOP_LEFT = "TOP_LEFT"
+}

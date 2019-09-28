@@ -26,9 +26,9 @@ export class EasyStar{
     collisionGrid: number[][] = [];
     costMap: {[key: number]: number } = {};
     pointsToCost: {[key: number]: {[key: number]: number} } = {};
-    directionalConditions:any = {};
+    directionalConditions: {[key: number]: {[key: number]: Directions[]} } = {};
     allowCornerCutting = true;
-    iterationsSoFar: any;
+    iterationsSoFar: number = 0;
     instances: {[key: number]: Instance} = {};
     instanceQueue: number[] = [];
     iterationsPerCalculation = Number.MAX_VALUE;
@@ -44,14 +44,23 @@ export class EasyStar{
     * which tiles in your grid should be considered
     * acceptable, or "walkable".
     **/
-    setAcceptableTiles(tiles: any) {
+    setAcceptableTiles(tiles: number[] | number | string) {
+        let setTile = (tiles:number) => {
+            if (!isNaN(tiles) && isFinite(tiles)) {
+                this.acceptableTiles = [tiles];
+            }else{
+                throw new Error("invalid number " + tiles)
+            }
+        }
         if (tiles instanceof Array) {
             // Array
             this.acceptableTiles = tiles;
-        } else if (!isNaN(parseFloat(tiles)) && isFinite(tiles)) {
-            // Number
-            this.acceptableTiles = [tiles];
+        } else if (typeof tiles === "string"){
+            setTile(parseFloat(tiles))
+        } else {
+            setTile(tiles)
         }
+        
     };
 
     /**
@@ -139,7 +148,7 @@ export class EasyStar{
     * @param {Array.<String>} allowedDirections A list of all the allowed directions that can access
     * the tile.
     **/
-    setDirectionalCondition(x: number, y: number, allowedDirections: any) {
+    setDirectionalCondition(x: number, y: number, allowedDirections: Directions[]) {
         if (this.directionalConditions[y] === undefined) {
             this.directionalConditions[y] = {};
         }
@@ -223,7 +232,7 @@ export class EasyStar{
     * @return {Array} The path
     *
     **/
-    findPathSync(startX: number, startY: number, endX: number, endY: number) {
+    findPathSync(startX: number, startY: number, endX: number, endY: number): IPoint[] | null {
 
         let val: IPoint[] | null = null;
         this.findPath(startX, startY, endX, endY, (result: IPoint[] | null) => {
@@ -395,8 +404,8 @@ export class EasyStar{
                 if (searchNode.x > 0 && searchNode.y > 0) {
 
                     if (this.allowCornerCutting ||
-                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y-1) &&
-                        this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x-1, searchNode.y))) {
+                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y-1, searchNode) &&
+                        this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x-1, searchNode.y, searchNode))) {
 
                         this.checkAdjacentNode(instance, searchNode,
                             -1, -1, this.DIAGONAL_COST * this.getTileCost(searchNode.x-1, searchNode.y-1));
@@ -405,8 +414,8 @@ export class EasyStar{
                 if (searchNode.x < this.collisionGrid[0].length-1 && searchNode.y < this.collisionGrid.length-1) {
 
                     if (this.allowCornerCutting ||
-                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y+1) &&
-                        this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x+1, searchNode.y))) {
+                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y+1, searchNode) &&
+                        this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x+1, searchNode.y, searchNode))) {
 
                         this.checkAdjacentNode(instance, searchNode,
                             1, 1, this.DIAGONAL_COST * this.getTileCost(searchNode.x+1, searchNode.y+1));
@@ -415,8 +424,8 @@ export class EasyStar{
                 if (searchNode.x < this.collisionGrid[0].length-1 && searchNode.y > 0) {
 
                     if (this.allowCornerCutting ||
-                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y-1) &&
-                        this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x+1, searchNode.y))) {
+                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y-1, searchNode) &&
+                        this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x+1, searchNode.y, searchNode))) {
 
                         this.checkAdjacentNode(instance, searchNode,
                             1, -1, this.DIAGONAL_COST * this.getTileCost(searchNode.x+1, searchNode.y-1));
@@ -425,8 +434,8 @@ export class EasyStar{
                 if (searchNode.x > 0 && searchNode.y < this.collisionGrid.length-1) {
 
                     if (this.allowCornerCutting ||
-                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y+1) &&
-                        this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x-1, searchNode.y))) {
+                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y+1, searchNode) &&
+                        this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x-1, searchNode.y, searchNode))) {
 
                         this.checkAdjacentNode(instance, searchNode,
                             -1, 1, this.DIAGONAL_COST * this.getTileCost(searchNode.x-1, searchNode.y+1));
@@ -460,9 +469,9 @@ export class EasyStar{
     };
 
     // Helpers
-    private isTileWalkable(collisionGrid: number[][], acceptableTiles: number[], x: number, y: number, sourceNode?: Node) {
+    private isTileWalkable(collisionGrid: number[][], acceptableTiles: number[], x: number, y: number, sourceNode: Node) {
         var directionalCondition = this.directionalConditions[y] && this.directionalConditions[y][x];
-        if (directionalCondition && sourceNode) {
+        if (directionalCondition) {
             var direction = this.calculateDirection(sourceNode.x - x, sourceNode.y - y)
             var directionIncluded = function () {
                 for (var i = 0; i < directionalCondition.length; i++) {
@@ -486,15 +495,15 @@ export class EasyStar{
      * -1,  0 | SOURCE | 1,  0
      * -1,  1 | 0,  1  | 1,  1
      */
-    private calculateDirection (diffX: string | number, diffY: string | number) {
-        if (diffX === 0 && diffY === -1) return TOP
-        else if (diffX === 1 && diffY === -1) return TOP_RIGHT
-        else if (diffX === 1 && diffY === 0) return RIGHT
-        else if (diffX === 1 && diffY === 1) return BOTTOM_RIGHT
-        else if (diffX === 0 && diffY === 1) return BOTTOM
-        else if (diffX === -1 && diffY === 1) return BOTTOM_LEFT
-        else if (diffX === -1 && diffY === 0) return LEFT
-        else if (diffX === -1 && diffY === -1) return TOP_LEFT
+    private calculateDirection (diffX: string | number, diffY: string | number): Directions {
+        if (diffX === 0 && diffY === -1) return Directions.TOP
+        else if (diffX === 1 && diffY === -1) return Directions.TOP_RIGHT
+        else if (diffX === 1 && diffY === 0) return Directions.RIGHT
+        else if (diffX === 1 && diffY === 1) return Directions.BOTTOM_RIGHT
+        else if (diffX === 0 && diffY === 1) return Directions.BOTTOM
+        else if (diffX === -1 && diffY === 1) return Directions.BOTTOM_LEFT
+        else if (diffX === -1 && diffY === 0) return Directions.LEFT
+        else if (diffX === -1 && diffY === -1) return Directions.TOP_LEFT
         throw new Error('These differences are not valid: ' + diffX + ', ' + diffY)
     };
 
@@ -539,12 +548,13 @@ export class EasyStar{
         }
     };
 }
-
-export const TOP = 'TOP'
-export const TOP_RIGHT = 'TOP_RIGHT'
-export const RIGHT = 'RIGHT'
-export const BOTTOM_RIGHT = 'BOTTOM_RIGHT'
-export const BOTTOM = 'BOTTOM'
-export const BOTTOM_LEFT = 'BOTTOM_LEFT'
-export const LEFT = 'LEFT'
-export const TOP_LEFT = 'TOP_LEFT'
+export enum Directions{
+    TOP = 'TOP',
+    TOP_RIGHT = 'TOP_RIGHT',
+    RIGHT = 'RIGHT',
+    BOTTOM_RIGHT = 'BOTTOM_RIGHT',
+    BOTTOM = 'BOTTOM',
+    BOTTOM_LEFT = 'BOTTOM_LEFT',
+    LEFT = 'LEFT',
+    TOP_LEFT = 'TOP_LEFT',
+}

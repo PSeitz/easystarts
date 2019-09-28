@@ -2,8 +2,8 @@ import Node from "./node";
 import { IPoint } from "./index";
 
 export default class Instance {
-    pointsToAvoid: any = {};
-    nodeHash:any = {};
+    pointsToAvoid: {[key: number]: {[key: number]: number} } = {};
+    nodeHash:  { [x: string]: { [x: string]: Node; }; } = {};
     isDoneCalculating?: boolean;
     constructor(
         public startX: number,

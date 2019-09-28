@@ -1,3 +1,4 @@
+"use strict";
 /**
 *   EasyStar.js
 *   github.com/prettymuchbryce/EasyStarJS
@@ -5,13 +6,17 @@
 *
 *   Implementation By Bryce Neal (@prettymuchbryce)
 **/
-import Instance from './instance';
-import Node from './node';
-import Heap from 'heap';
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const instance_1 = __importDefault(require("./instance"));
+const node_1 = __importDefault(require("./node"));
+const heap_1 = __importDefault(require("heap"));
 const CLOSED_LIST = 0;
 const OPEN_LIST = 1;
 let nextInstanceId = 1;
-export class EasyStar {
+class EasyStar {
     constructor() {
         this.STRAIGHT_COST = 1.0;
         this.DIAGONAL_COST = 1.4;
@@ -21,6 +26,7 @@ export class EasyStar {
         this.pointsToCost = {};
         this.directionalConditions = {};
         this.allowCornerCutting = true;
+        this.iterationsSoFar = 0;
         this.instances = {};
         this.instanceQueue = [];
         this.iterationsPerCalculation = Number.MAX_VALUE;
@@ -35,13 +41,23 @@ export class EasyStar {
     * acceptable, or "walkable".
     **/
     setAcceptableTiles(tiles) {
+        let setTile = (tiles) => {
+            if (!isNaN(tiles) && isFinite(tiles)) {
+                this.acceptableTiles = [tiles];
+            }
+            else {
+                throw new Error("invalid number " + tiles);
+            }
+        };
         if (tiles instanceof Array) {
             // Array
             this.acceptableTiles = tiles;
         }
-        else if (!isNaN(parseFloat(tiles)) && isFinite(tiles)) {
-            // Number
-            this.acceptableTiles = [tiles];
+        else if (typeof tiles === "string") {
+            setTile(parseFloat(tiles));
+        }
+        else {
+            setTile(tiles);
         }
     }
     ;
@@ -209,8 +225,8 @@ export class EasyStar {
     *
     **/
     findPathSync(startX, startY, endX, endY) {
-        let val;
-        this.findPath(startX, startY, endX, endY, function (result) {
+        let val = null;
+        this.findPath(startX, startY, endX, endY, (result) => {
             val = result;
         });
         this.calculate();
@@ -262,13 +278,12 @@ export class EasyStar {
             return;
         }
         // Create the instance
-        var instance = new Instance(startX, startY, endX, endY);
-        instance.openList = new Heap(function (nodeA, nodeB) {
+        let heap = new heap_1.default(function (nodeA, nodeB) {
             return nodeA.bestGuessDistance() - nodeB.bestGuessDistance();
         });
+        var instance = new instance_1.default(startX, startY, endX, endY, heap, callback);
         instance.isDoneCalculating = false;
         instance.nodeHash = {};
-        instance.callback = callback;
         instance.openList.push(this.coordinateToNode(instance, instance.startX, instance.startY, null, this.STRAIGHT_COST));
         var instanceId = nextInstanceId++;
         this.instances[instanceId] = instance;
@@ -334,8 +349,7 @@ export class EasyStar {
                     parent = parent.parent;
                 }
                 path.reverse();
-                var ip = path;
-                instance.callback(ip);
+                instance.callback(path);
                 delete this.instances[instanceId];
                 this.instanceQueue.shift();
                 continue;
@@ -356,29 +370,29 @@ export class EasyStar {
             if (this.diagonalsEnabled) {
                 if (searchNode.x > 0 && searchNode.y > 0) {
                     if (this.allowCornerCutting ||
-                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y - 1) &&
-                            this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x - 1, searchNode.y))) {
+                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y - 1, searchNode) &&
+                            this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x - 1, searchNode.y, searchNode))) {
                         this.checkAdjacentNode(instance, searchNode, -1, -1, this.DIAGONAL_COST * this.getTileCost(searchNode.x - 1, searchNode.y - 1));
                     }
                 }
                 if (searchNode.x < this.collisionGrid[0].length - 1 && searchNode.y < this.collisionGrid.length - 1) {
                     if (this.allowCornerCutting ||
-                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y + 1) &&
-                            this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x + 1, searchNode.y))) {
+                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y + 1, searchNode) &&
+                            this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x + 1, searchNode.y, searchNode))) {
                         this.checkAdjacentNode(instance, searchNode, 1, 1, this.DIAGONAL_COST * this.getTileCost(searchNode.x + 1, searchNode.y + 1));
                     }
                 }
                 if (searchNode.x < this.collisionGrid[0].length - 1 && searchNode.y > 0) {
                     if (this.allowCornerCutting ||
-                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y - 1) &&
-                            this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x + 1, searchNode.y))) {
+                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y - 1, searchNode) &&
+                            this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x + 1, searchNode.y, searchNode))) {
                         this.checkAdjacentNode(instance, searchNode, 1, -1, this.DIAGONAL_COST * this.getTileCost(searchNode.x + 1, searchNode.y - 1));
                     }
                 }
                 if (searchNode.x > 0 && searchNode.y < this.collisionGrid.length - 1) {
                     if (this.allowCornerCutting ||
-                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y + 1) &&
-                            this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x - 1, searchNode.y))) {
+                        (this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x, searchNode.y + 1, searchNode) &&
+                            this.isTileWalkable(this.collisionGrid, this.acceptableTiles, searchNode.x - 1, searchNode.y, searchNode))) {
                         this.checkAdjacentNode(instance, searchNode, -1, 1, this.DIAGONAL_COST * this.getTileCost(searchNode.x - 1, searchNode.y + 1));
                     }
                 }
@@ -409,7 +423,7 @@ export class EasyStar {
     // Helpers
     isTileWalkable(collisionGrid, acceptableTiles, x, y, sourceNode) {
         var directionalCondition = this.directionalConditions[y] && this.directionalConditions[y][x];
-        if (directionalCondition && sourceNode) {
+        if (directionalCondition) {
             var direction = this.calculateDirection(sourceNode.x - x, sourceNode.y - y);
             var directionIncluded = function () {
                 for (var i = 0; i < directionalCondition.length; i++) {
@@ -436,21 +450,21 @@ export class EasyStar {
      */
     calculateDirection(diffX, diffY) {
         if (diffX === 0 && diffY === -1)
-            return TOP;
+            return Directions.TOP;
         else if (diffX === 1 && diffY === -1)
-            return TOP_RIGHT;
+            return Directions.TOP_RIGHT;
         else if (diffX === 1 && diffY === 0)
-            return RIGHT;
+            return Directions.RIGHT;
         else if (diffX === 1 && diffY === 1)
-            return BOTTOM_RIGHT;
+            return Directions.BOTTOM_RIGHT;
         else if (diffX === 0 && diffY === 1)
-            return BOTTOM;
+            return Directions.BOTTOM;
         else if (diffX === -1 && diffY === 1)
-            return BOTTOM_LEFT;
+            return Directions.BOTTOM_LEFT;
         else if (diffX === -1 && diffY === 0)
-            return LEFT;
+            return Directions.LEFT;
         else if (diffX === -1 && diffY === -1)
-            return TOP_LEFT;
+            return Directions.TOP_LEFT;
         throw new Error('These differences are not valid: ' + diffX + ', ' + diffY);
     }
     ;
@@ -474,7 +488,7 @@ export class EasyStar {
         else {
             costSoFar = 0;
         }
-        var node = new Node(parent, x, y, costSoFar, simpleDistanceToTarget);
+        var node = new node_1.default(parent, x, y, costSoFar, simpleDistanceToTarget);
         instance.nodeHash[y][x] = node;
         return node;
     }
@@ -500,12 +514,16 @@ export class EasyStar {
     }
     ;
 }
-export const TOP = 'TOP';
-export const TOP_RIGHT = 'TOP_RIGHT';
-export const RIGHT = 'RIGHT';
-export const BOTTOM_RIGHT = 'BOTTOM_RIGHT';
-export const BOTTOM = 'BOTTOM';
-export const BOTTOM_LEFT = 'BOTTOM_LEFT';
-export const LEFT = 'LEFT';
-export const TOP_LEFT = 'TOP_LEFT';
+exports.EasyStar = EasyStar;
+var Directions;
+(function (Directions) {
+    Directions["TOP"] = "TOP";
+    Directions["TOP_RIGHT"] = "TOP_RIGHT";
+    Directions["RIGHT"] = "RIGHT";
+    Directions["BOTTOM_RIGHT"] = "BOTTOM_RIGHT";
+    Directions["BOTTOM"] = "BOTTOM";
+    Directions["BOTTOM_LEFT"] = "BOTTOM_LEFT";
+    Directions["LEFT"] = "LEFT";
+    Directions["TOP_LEFT"] = "TOP_LEFT";
+})(Directions = exports.Directions || (exports.Directions = {}));
 //# sourceMappingURL=index.js.map

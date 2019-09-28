@@ -1,4 +1,4 @@
-import { EasyStar, TOP,TOP_RIGHT,LEFT,BOTTOM_RIGHT,RIGHT,BOTTOM } from '../lib/index';
+import { EasyStar, Directions } from '../lib/index';
 import { expect } from 'chai';
 import 'mocha';
 
@@ -34,6 +34,33 @@ describe("EasyStar", function() {
         expect(path[3].y).to.equal(3);
         done()
     }
+  });
+
+
+  it("sync - It should find a path successfully with corner cutting enabled.", function() {
+    var easyStar = new EasyStar();
+    easyStar.enableDiagonals();
+    var map = [[1,0,0,0,0],
+               [0,1,0,0,0],
+               [0,0,1,0,0],
+               [0,0,0,1,0],
+               [0,0,0,0,1]];
+
+    easyStar.setGrid(map);
+
+    easyStar.enableCornerCutting();
+
+    easyStar.setAcceptableTiles([1]);
+
+    const path = easyStar.findPathSync(0,0,4,4);
+    expect(path).not.to.be.null;
+    expect(path!.length).to.equal(5);
+    expect(path![0].x).to.equal(0);
+    expect(path![0].y).to.equal(0);
+    expect(path![3].x).to.equal(3);
+    expect(path![3].y).to.equal(3);
+    easyStar.calculate();
+
   });
 
   it("It should fail to find a path successfully with corner cutting disabled.", function(done) {
@@ -290,13 +317,38 @@ describe("EasyStar", function() {
     easyStar.findPath(4, 4, 2, 2, function(path: any){
         expect(path).not.to.be.null;
         expect(path.length).to.equal(3);
-        expect(path[1].x).to.equal(3);
-        expect(path[1].y).to.equal(3);
+        expect(path[1]).to.deep.equal({ x: 3, y: 3})
         done();
     });
 
     easyStar.calculate();
   })
+
+  it("It should handle tiles with a directional condition and no corner cutting", function (done) {
+    var easyStar = new EasyStar();
+    easyStar.disableCornerCutting();
+    var grid = [
+        [0, 1, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+    ];
+    easyStar.setGrid(grid);
+    easyStar.enableDiagonals();
+    easyStar.setAcceptableTiles([0]);
+    easyStar.setDirectionalCondition(2, 1, [Directions.TOP]);
+    easyStar.setDirectionalCondition(1, 1, [Directions.RIGHT]);
+    easyStar.setDirectionalCondition(0, 1, [Directions.RIGHT]);
+    easyStar.setDirectionalCondition(0, 0, [Directions.BOTTOM]);
+
+    easyStar.findPath(2, 0, 0, 0, function (path: any) {
+        expect(path).not.to.be.null;
+        expect(path.length).to.equal(5);
+        expect(path[2]).to.deep.equal({ x: 1, y: 1})
+        done();
+    });
+
+    easyStar.calculate();
+})
 
   it("It should handle tiles with a directional condition", function (done) {
       var easyStar = new EasyStar();
@@ -308,12 +360,12 @@ describe("EasyStar", function() {
       easyStar.setGrid(grid);
       easyStar.enableDiagonals();
       easyStar.setAcceptableTiles([0]);
-      easyStar.setDirectionalCondition(2, 1, [TOP]);
-      easyStar.setDirectionalCondition(1, 2, [TOP_RIGHT]);
-      easyStar.setDirectionalCondition(2, 2, [LEFT]);
-      easyStar.setDirectionalCondition(1, 1, [BOTTOM_RIGHT]);
-      easyStar.setDirectionalCondition(0, 1, [RIGHT]);
-      easyStar.setDirectionalCondition(0, 0, [BOTTOM]);
+      easyStar.setDirectionalCondition(2, 1, [Directions.TOP]);
+      easyStar.setDirectionalCondition(1, 2, [Directions.TOP_RIGHT]);
+      easyStar.setDirectionalCondition(2, 2, [Directions.LEFT]);
+      easyStar.setDirectionalCondition(1, 1, [Directions.BOTTOM_RIGHT]);
+      easyStar.setDirectionalCondition(0, 1, [Directions.RIGHT]);
+      easyStar.setDirectionalCondition(0, 0, [Directions.BOTTOM]);
 
       easyStar.findPath(2, 0, 0, 0, function (path: any) {
           expect(path).not.to.be.null;
