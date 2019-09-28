@@ -1,9 +1,9 @@
 {
-    "name": "easystarjs",
+    "name": "easystarts",
     "version": "0.4.3",
     "description": "Asynchronous A* Pathfinding API",
-    "main": "./out/lib/index.js",
-    "types": "./out/lib/index.d.ts",
+    "main2": "./out/lib/index.js",
+    "types2": "./out/lib/index.d.ts",
     "scripts": {
         "build": "tsc",
         "build2": "webpack && webpack --minify",
