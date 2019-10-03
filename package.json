@@ -1,6 +1,6 @@
 {
     "name": "easystarts",
-    "version": "0.4.3",
+    "version": "0.4.5",
     "description": "Asynchronous A* Pathfinding API",
     "main": "./out/index.js",
     "types": "./out/index.d.ts",
