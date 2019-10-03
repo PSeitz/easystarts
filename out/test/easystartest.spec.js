@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const index_1 = require("../lib/index");
+const index_1 = require("../index");
 const chai_1 = require("chai");
 require("mocha");
 describe("EasyStar", function () {

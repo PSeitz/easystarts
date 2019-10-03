@@ -1,4 +1,4 @@
-import { EasyStar, Directions } from '../lib/index';
+import { EasyStar, Directions } from '../index';
 import { expect } from 'chai';
 import 'mocha';
 
